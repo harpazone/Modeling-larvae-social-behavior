@@ -7,6 +7,6 @@ Models used in harpaz et al, (2021) Precise visuomotor transformations underlyin
 Download all codes and .mat files containing response functions used in the simulations and set path to the current folder.
 
 
-Use the script demoRunSimulateLarvaFish.m for a demo on how to run the simulaitons
+Use the script demoRunSimulateLarvaFish.m for a demo on how to run the simulations
 
-Any questions/comment bug report can be sent to harpazone@gmail.com
+Any questions/comments or bug reports can be sent to harpazone@gmail.com
