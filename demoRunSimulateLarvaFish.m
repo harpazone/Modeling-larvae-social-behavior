@@ -38,15 +38,15 @@
 age = 7; % 7, 14 or 21
 
 % 
-load_path = ['/Users/royharpaz/Dropbox/Zebrafish neurobiology/Social behavior/Manuscript/',...
-    'Roy 2020/Data to publish/Response fucntions for simualtions/'];
+load_path = ['/path_to_folder_with_dot_mat_files/'];
+
 
 type = sprintf('%ddpf_VR',age); % for interactions based on virtual assay
 % type = sprintf('%ddpf_exp',age); % for interactions based on group experiments
 
 % type = 'non_social'; % for no socaial interactions
 
-trial_num = 4; % simulation repetiotion
+trial_num = 4; % simulation repetition
 rng(trial_num); % for reproducability
 
 %.................Main Function.................
