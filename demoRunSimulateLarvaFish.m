@@ -1,11 +1,12 @@
 % This is a demo explaining how how to run the 'SimulateLarvaFish.m' code
-% %used in Harpaz et al, ‘Precise visuomotor transformations underlying collective behavior in larval zebrafish’. 
+% used in Harpaz et al, ‘Precise visuomotor transformations underlying collective behavior in larval zebrafish’. 
 % 
 % In order to run the code, the user needs to set the following parameters:
 % 
 % age – age of the simulated fish 7 ,14 or 21. 
 % 
-% Load_path – exact path where the .mat files containing the response functions of the fish are stored [files can be found at: ]
+% load_path – exact path where the .mat files containing the response functions of the fish are stored
+% [files can be found at: https://github.com/harpazone/Modeling-larvae-social-behavior]
 % 
 % type – user should uncomment one of the following
 % -	age+_VR – for virtual reality based interactions
@@ -37,13 +38,12 @@
 %...........Local Variable definitions..........
 age = 7; % 7, 14 or 21
 
-% 
-load_path = ['/path_to_folder_with_dot_mat_files/'];
+% exact path where .mat files of response functions are stored
+load_path = [];
 
-
+% uncomment one of these 3 options for the 3 different model types
 type = sprintf('%ddpf_VR',age); % for interactions based on virtual assay
 % type = sprintf('%ddpf_exp',age); % for interactions based on group experiments
-
 % type = 'non_social'; % for no socaial interactions
 
 trial_num = 4; % simulation repetition
@@ -51,7 +51,7 @@ rng(trial_num); % for reproducability
 
 %.................Main Function.................
 [x,y,Vx,Vy,Speed, angle, State, wallD] = ...
-    SimulateLarvaFishGitHub(type, age, load_path, 'PLOT', 0);
+    SimulateLarvaFishGitHub(type, age, load_path, 'PLOT', 1);
 
 
 
