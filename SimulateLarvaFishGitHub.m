@@ -4,7 +4,6 @@ function [x,y,Vx,Vy,Speed, angle, State, wallD] = ...
 
 
 
-
 % Input: int_type - interaction type [non_social, 7 dpf...]
 
 %        optional input: Fs - frames per sec,
@@ -25,17 +24,17 @@ function [x,y,Vx,Vy,Speed, angle, State, wallD] = ...
 
 
 % set defaults
-defaultFs = 50;
-defaultN = 5;
-defaultall_ages = [7, 14, 21];
+defaultFs = 50; % sample per second
+defaultN = 5; % number of fish 
+defaultall_ages = [7, 14, 21]; % age in days
 defaultbout_rate = [ 1.65,  1.4, 1.4]; % for 7,14 and 21 dpf
-defaultSpeed = [ 1.5 , 1.5 , 1.2 ];
-defaultBL = [ 0.4 , 0.5 , 0.8 ];
-defaultArean_rad = [6.5, 9.2, 12.6];
+defaultSpeed = [ 1.5 , 1.5 , 1.2 ]; % speed in BL/s
+defaultBL = [ 0.4 , 0.5 , 0.8 ];  % fish body length in CM
+defaultArean_rad = [6.5, 9.2, 12.6]; % arean radius in cm
 defaultT = 600; % in sec
 defaultOne_side_blindang = 15;  % in degrees s.t. 2*blindangle is the full angle
-defaultWall_th = 2;
-defaultPLOT = 1;
+defaultWall_th = 2;  %wall distance threshold in Bodey length
+defaultPLOT = 1; % plot stimulations yes 1/no 0
 
 % parse
 vars = inputParser;
@@ -60,22 +59,21 @@ all_BL = vars.Results.all_BL;
 all_arena_rad = vars.Results.all_arean_rad;
 T = vars.Results.T;
 blindang = vars.Results.blindang;
-WD_th = vars.Results.wall_th; %wall distance threshold
+WD_th = vars.Results.wall_th;
 PLOT = vars.Results.PLOT;
 Fs = vars.Results.Fs;
 N = vars.Results.N;
 all_ages = vars.Results.all_ages;
 
-% translate time to frame
+% translate time to frames
 T = T*Fs; 
 dt = 1/Fs'; % delta T
 
 BL = all_BL(age==all_ages); % BL in cm
 
-% fraction from analytical bout rate due to duration of bout exectuation
-% [see file AnalyticalVsActualBoutRates.m
-est_dec_in_rate = 0.55; %increass to compensate for 'down times' when fush cant bout (found from graphs)
-bout_prob = all_bout_rate(age==all_ages)/Fs/est_dec_in_rate; % this is to acount for 'down time';
+% set bout probability
+est_dec_in_rate = 0.55; %increass to account for 'down times' when fish cant bout
+bout_prob = all_bout_rate(age==all_ages)/Fs/est_dec_in_rate; 
 
 avg_speed = all_avg_speed(age==all_ages);
 
@@ -86,38 +84,28 @@ vert_size = BL/2;
 % arena radius
 arena_rad = all_arena_rad(age==all_ages);
 
-% REMOVE THIS:
-% loadpath = ['Y:\Simulating free swimming larva\'];
-% define turning response according to age and type [VR vs group
-% experiment]
 
+% load the relevant response functions
 if strcmp(int_type,'7dpf_exp') % 7 dpf group experiemnt
-    %     load([loadpath,'turn_on_ref_diff_WT_AB5fish_fit']);
-    %     load([loadpath,'turn_on_ref_diff_Lightallage7fit']);
+
     load([loadpath,'turn_7dpf_exp']);
     
     turn_fn = @(x) x.*blin+0.5;
     
 elseif strcmp(int_type,'14dpf_exp') % 14 dpf group experiemnt
     
-    %     load([loadpath,'turn_on_ref_diff_ABallage14_fit']);
-    %     load([loadpath,'turn_on_ref_diff_Lightallage14_fit']);
     load([loadpath,'turn_14dpf_exp']);
    
     turn_fn = slm; 
     
 elseif strcmp(int_type,'21dpf_exp') % 21 dpf group experiemnt
-    %     load([loadpath,'turn_on_ref_diff_ABallage21_fit']);
-    %     load([loadpath,'turn_on_ref_diff_Lightallage21_fit']);
+
     load([loadpath,'turn_21dpf_exp']);
     
     turn_fn = slm; 
 
 elseif strcmp(int_type,'7dpf_VR')
-    % set horz and vertical sizes of the fish
     
-    
-    %     load([loadpath,'mean_turn_prob_by_eye_diff_AB_Age_7_fit_7.mat']);
     load([loadpath,'turn_7dpf_VR']);
     
     p1 = FIT.p1;
@@ -126,34 +114,33 @@ elseif strcmp(int_type,'7dpf_VR')
     
 elseif strcmp(int_type,'14dpf_VR')
     
-    %     load([loadpath,'mean_turn_prob_by_eye_diff_AB_Age_14_fit_8.mat']);
     load([loadpath,'turn_14dpf_VR']);
     turn_fn = slm; % linear on eye diff
     
 elseif strcmp(int_type,'21dpf_VR')
     
     load([loadpath,'turn_21dpf_VR']);
-    turn_fn = slm; % linear on eye diff
+    turn_fn = slm; 
 elseif strcmp(int_type,'non_social')
-    turn_fn = @(x) x.*0 + 0.5; % no reponse to neighbors always outputs 0.5
+     % no reponse to neighbors always outputs 0.5
+    turn_fn = @(x) x.*0 + 0.5;
     
 end
 
+% load wall response function
 load([loadpath,'wall_response']);
 
-wall_fun = @(x) aexp.*exp(bexp.*x); % note - the function is for BL not cm to match all age groups
+% note - the function is for BL not cm to match all age groups
+wall_fun = @(x) aexp.*exp(bexp.*x); 
 
 
 %%
 
 % turning parameters:
 Wall_sig = 45; % % sigma of normal distribution for turning angles from wall
-% WD_th = 2; % BL (since it is age sependend) below this distance fish respond to walls
 
 Neigh_sig = 30; % sigma for normal distribution turning angles from neighbros
 
-% probability to stop chaining turns
-Pchange_turn = 1-0.5;
 
 % define a sigmoidal bout shape (for nice visualizaiton of motion)
 xsig = (0:7)/Fs;
@@ -184,8 +171,6 @@ y = ones(N,T);
 
 x(:,1) = x_strt;
 y(:,1) = y_strt;
-% relPosX = zeros(N,T,N);
-% relPosY = zeros(N,T,N);
 
 % variables for neighbor relative angle, orientation and distance
 relAng = zeros(N,T,N);
@@ -223,21 +208,16 @@ angFromWall = zeros(N,T);
 vec_2_fish = [x(:,1)./Norm y(:,1)./Norm];
 
 % starting angle from wall as the angle between the norm to the
-% fish and the angle of motion. This gives 0 360 angle. ang < 180
-% means wall is to the left, ang > 180 wall is to the right (THIS
-% Was double checked)
+% fish and the angle of motion.
 [~,ang_from_norm] = angOfVectors([sind(angle(:,1)) cosd(angle(:,1))],vec_2_fish);
 angFromWall(:,1) = ang_from_norm;
 
 Bouts = zeros(N,T); % var for bouts
-all_p = zeros(N,T); % var for proobabilities
-
-% variable for turning left or right, used when no interactions
-% exist 1 is , -1 is
+all_p = zeros(N,T); % var for probabilities to turn right p>0.5 or left p<0.5
 
 
 % variable for the obtained retina angles:
-all_pct_ret = zeros(N,T,2,N-1);
+all_ret_ang = zeros(N,T,2,N-1);
 
 from_bout_count = ones(N,1); % counter for time from previous bout;
 
@@ -248,12 +228,6 @@ for f = 1:N
         relativeNeighborProp(f,x(:,t),y(:,t),angle(:,t));
 end
 
-% plot(X(:,1:2)',Y(:,1:2)','.');hold on;
-% quiver(X(:,1),Y(:,1),sind(angle(:,1)),cosd(angle(:,1)),0.5);
-%
-% plot(boundx,boundy,'k');
-%         p = 0; %
-% rng(1)
 
 for t = 2:T-15 % for all points
     
@@ -280,40 +254,37 @@ for t = 2:T-15 % for all points
         neighO(idle(f)) = [];
         
         
-        % calcualte retina angle according to horizontal or vertical size
+        % calcualte retina angle and probability of turning right/left
         if strcmp(int_type,'7dpf_exp') || strcmp(int_type,'14dpf_exp')...
                 || strcmp(int_type,'14dpf_exp')
             
-            % use only fish that are not on the 
+            % use only fish that are not in the blind angle zone (behind
+            % the fish)
             ii_not_in_blind =  neighA < (180-blindang) & neighA > (-180+blindang);
             left_right_side_fish = ones(size(neighA));
             left_right_side_fish(neighA < 0) = -1; % neighbors to the left -1, on the right 1
             left_side_ii = left_right_side_fish<0;
             
+            % calc ret angles according to horzinotal size, distance and
+            % relative angle:
             [ret_angle, right_side] = calcVisualAngle(neighD, neighA, neighO,...
                 horz_size);
             
-%             ret_angle = ret_angle*5;
-%              ret_angle = 2 * atand(horz_size/2./neighD);
-
-            
-            % calc ret angles according to horzinotal size, distance and
-            % relative angle:
-            
+            % sum each eye
             pctr = nansum(ret_angle(right_side==1 & ii_not_in_blind));
             pctl = nansum(ret_angle(right_side==0 & ii_not_in_blind)); % neighbors to the left
             
             % save to var retina occupency:
-            all_pct_ret(idle(f),t,1,left_side_ii & ii_not_in_blind) = ...
+            all_ret_ang(idle(f),t,1,left_side_ii & ii_not_in_blind) = ...
                 ret_angle(left_side_ii & ii_not_in_blind);
-            all_pct_ret(idle(f),t,2,~left_side_ii & ii_not_in_blind) = ...
+            all_ret_ang(idle(f),t,2,~left_side_ii & ii_not_in_blind) = ...
                 ret_angle(~left_side_ii & ii_not_in_blind);
             
             % difference between the eyes
             Diff = pctr - pctl;
                        
             % calculate probability to turn right from visual input
-            if age== 7 % if this is a linear funciton
+            if age== 7 
                 predicted_pright = turn_fn(Diff);
                     
             else
@@ -322,58 +293,54 @@ for t = 2:T-15 % for all points
             
             
         else
-            % use the simple distance to fish to decide the retinal clutter
+            % use the distance and vertical size to decide angle 
             ret_angle = 2 * atand((vert_size/2)./neighD);
             
             % calculate predicted response for each fish
-            % according to its size and side
             left_right_side_fish = ones(size(neighA));
             left_right_side_fish(neighA < 0) = -1; % neighbors to the left -1, on the right 1
             left_side_ii = left_right_side_fish<0;
             
             % remove angles of fish in the blind spot:
-%             blind_spot_ii = neighA > (180-blindang) | neighA < (-180+blindang);
             ii_not_in_blind =  (neighA < (180-blindang) & neighA > (-180+blindang));
             
-            
             % save to var retina occupency:
-            all_pct_ret(idle(f),t,1,left_side_ii & ii_not_in_blind) = ...
+            all_ret_ang(idle(f),t,1,left_side_ii & ii_not_in_blind) = ...
                 ret_angle(left_side_ii & ii_not_in_blind);
-            all_pct_ret(idle(f),t,2,~left_side_ii & ii_not_in_blind) = ...
+            all_ret_ang(idle(f),t,2,~left_side_ii & ii_not_in_blind) = ...
                 ret_angle(~left_side_ii & ii_not_in_blind);
            
             
-            if age ==7 % age 7 has a linear fit 
+            % use retinal angle to calculate response bias for each fish
+            if age ==7 % 
                 temp_pright = turn_fn(ret_angle.*left_right_side_fish*-1); 
             else
                 temp_pright = slmeval(ret_angle,turn_fn);
                 temp_pright(~left_side_ii) = 1 - temp_pright(~left_side_ii);
             end
             
-            % we take a weighted avg on each side (reponse
-            % tendency is the difference from 0.5)
+            % take a weighted avg on each side (reponse
+            % turn bias is the difference from 0.5)
             if age == 7 % use a weighted average
                 left_response = sum(temp_pright(left_side_ii & ii_not_in_blind).*...
                     ret_angle(left_side_ii &  ii_not_in_blind))./...
                     sum(ret_angle(left_side_ii & ii_not_in_blind))-0.5;
                 
-                % we take a weighted avg on each side
                 right_response = sum(temp_pright(~left_side_ii & ii_not_in_blind).*...
                     ret_angle(~left_side_ii & ii_not_in_blind))./...
                     sum(ret_angle(~left_side_ii & ii_not_in_blind))-0.5;
-            else % use a simple average
+            else % use a simple average for ages 14,21
                 left_response = sum(temp_pright(left_side_ii & ii_not_in_blind))./...
                     sum((left_side_ii & ii_not_in_blind))-0.5;
                 
-                % we take a weighted avg on each side
                 right_response = sum(temp_pright(~left_side_ii & ii_not_in_blind))./...
                     sum((~left_side_ii & ii_not_in_blind))-0.5;
-                % ADD A SIMPLE AVERAGE:
             end
             
-            % we sum up the signed responses on both sides:
-            % (nans are when no neighbors) are on one side
-            
+            % sum up the signed responses on both sides:
+            % (nans indicate no neighbors) 
+            % to get the probability to turn right/left
+
             predicted_pright = nansum([left_response,right_response])+0.5;
             all_p(idle(f),t) = predicted_pright;
             
@@ -385,8 +352,7 @@ for t = 2:T-15 % for all points
         
         % flip a coin to decide on a bout
 
-        xx(f,t) = rand(1);
-        bout_flag = xx(f,t) < p_bout;
+        bout_flag =  rand(1) < p_bout;
         Bouts(idle(f),t) = bout_flag;
         
         % if a bout is starting - choose kinematics
@@ -407,7 +373,7 @@ for t = 2:T-15 % for all points
                 if pwall % if fish is turning from wall
                     
                     % if wall is to the left (<180) turn right) and vice
-                    % versa (THIS WAS CHECKED and is correct)
+                    % versa 
                     p_right = angFromWall(idle(f),t-1) < 180;
                     ang = randn(1)*Wall_sig;
                     
@@ -418,14 +384,12 @@ for t = 2:T-15 % for all points
                     
                 end
             else
-                pwall = 0;
+                pwall = 0; % no wall response
             end
             
             % if fish is not responding to wall it is responding to neighbors:
             if pwall==0
-%                 
-%                 predicted_pright
-%                 t
+
                 % calculate the prob to turn left or right:
                 p_right = rand(1) < predicted_pright;
                 
@@ -436,15 +400,10 @@ for t = 2:T-15 % for all points
                 % positive is a right turn negative is a left turn
                 ang = abs(ang)*p_right-abs(ang)*(1-p_right);
                 
-                %                 disp(['fish: ',num2str(idle(f)),' neighbor dep ang: ',...
-                %                     num2str(ang,3)]);
-                %                 pause();
                 % change angle from distribution, according to neighbor
                 % properties:
                 ang = angle(idle(f),t-1) + ang;
-                %                         p = p+1;
           
-           
             end
             
             % set kinematics
@@ -464,7 +423,7 @@ for t = 2:T-15 % for all points
             yy = cumsum(vy);
             
             % check if the expected trajectory will go outside the arena
-            dd = calculateNorm([[xx+x(idle(f),t-1)]' [yy+y(idle(f),t-1)]']); % radius
+            dd = calculateNorm([(xx+x(idle(f),t-1))' (yy+y(idle(f),t-1))']); % radius
             
             outside = dd > rad; % position outside
             % if needed correct to stop at the wall
@@ -490,15 +449,13 @@ for t = 2:T-15 % for all points
             y(idle(f),t:t+length(xx)-1) = yy+y(idle(f),t-1);
             
             
-        else
+        else % no bout for this fish
             x(idle(f),t) = x(idle(f),t-1);
-            %                     [x(idle(f),t),x(idle(f),t-1)]
             y(idle(f),t) = y(idle(f),t-1);
             angle(idle(f),t) = angle(idle(f),t-1);
             % increase the counter if no bout was performed
             from_bout_count(idle(f)) = from_bout_count(idle(f))+1;
         end
-        
         
         
     end
@@ -520,19 +477,16 @@ for t = 2:T-15 % for all points
     % set starting positions:
     [~,angFromWall(:,t)] = angOfVectors([sind(angle(:,t)) cosd(angle(:,t))],vec_2_fish);
     
-    
+    % plot if needed
     if PLOT && t>20
-        %                 plot(x(2,1:500)); hold on;
-        %                 plot(x(2,1:t));
-        %                 hold off;
-        plot(x(:,t-20:t)',y(:,t-20:t)','.'); hold on;
-        %                 quiver(x(:,t),y(:,t),Vx(:,t),Vy(:,t),0.1);
+
+        plot(x(:,t-20:2:t)',y(:,t-20:2:t)','.'); hold on;
         plot(boundx,boundy,'k');
         hold off
         axis image;
-        %     axis([-500 500 -500 500]);
-        %     [X(:,t-1:t+1) State(:,t-1:t+1)]
+
         title(round(t/Fs,3));
+        axis off;
         pause(0.01);
     end
     
